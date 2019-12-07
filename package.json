@@ -1,0 +1,35 @@
+{
+    "name": "coded",
+    "version": "1.0.50",
+    "description": "coded.sh is an open-source platform to get web projects online on VPS, cloud and dedicated servers. All your projects can be managed from an interactive CLI (command-line interface).",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "author": "coded.sh",
+    "license": "SSPL",
+    "keywords": [
+        "devops",
+        "node.js",
+        "go",
+        "CI",
+        "deployment"
+    ],
+    "dependencies": {
+        "data-store": "^4.0.3",
+        "figlet": "^1.2.0",
+        "inquirer": "^6.0.0",
+        "network": "^0.4.1",
+        "parse": "^1.11.1",
+        "request": "^2.88.0",
+        "ssh-config": "^2.0.0",
+        "ssh-keygen": "^0.4.2"
+    },
+    "pkg": {
+        "scripts": "node_modules/network/lib/*.js",
+        "assets": "node_modules/figlet/fonts/*"
+    },
+    "bin": {
+        "coded": "./index.js"
+    }
+}
