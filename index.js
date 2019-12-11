@@ -7,6 +7,8 @@ let parseAppId = 'coded';
 ////
 
 let exec = require('child_process').exec;
+let { spawn } = require('child_process');
+
 let inquirer = require('inquirer');
 let Parse = require('parse/node');
 let figlet = require('figlet');
@@ -16,7 +18,6 @@ let request = require('request');
 let package = require('./package.json');
 let store = require('data-store')('coded');
 let dns = require('dns');
-let isWin = process.platform === "win32";
 
 //SSH
 let SSHConfig = require('ssh-config');
@@ -33,11 +34,6 @@ figlet('CODED', {
         console.log(data);
     }
     console.log(version);
-    //Check if Coded CLI started on Win
-    if (isWin == true){
-      console.log("Coded CLI works only on Linux and MacOS now.");
-      return;
-    }
     //Check if Git is installed on this machine
     checkGit();
 });
@@ -102,26 +98,26 @@ function checkGit() {
 }
 
 function checkCodedKey() {
-    let codedKey = require('os').homedir() + '/.ssh/coded-cli_rsa';
+    let codedKey = `${require('os').homedir()}/.ssh/coded-cli_rsa`;
     if (fs.existsSync(`${codedKey}`)) {
         var sshPubKey = fs.readFileSync(`${codedKey}.pub`, 'utf8');
         savePublicKeyIfNeeded(sshPubKey);
         setupSSHConfig();
     } else {
-        var comment = Parse.User.current().get("username");
-        keygen({
-            location: codedKey,
-            comment: comment,
-            password: false,
-            read: true
-        }, function(err, out) {
-            if (err) {
-                console.log('Something went wrong: ' + err);
-                return;
-            }
-            savePublicKeyIfNeeded(out.pubKey);
-            setupSSHConfig();
+        const keygen = spawn(`ssh-keygen -b 2048 -t rsa -f ${require('os').homedir()}/.ssh/coded-cli_rsa -N ""`,{
+          shell: true
         });
+        const timeout = setInterval(function() {
+            const file = `${codedKey}.pub`;
+            const fileExists = fs.existsSync(file);
+
+            if (fileExists) {
+              var sshPubKey = fs.readFileSync(file, 'utf8');
+              clearInterval(timeout);
+              savePublicKeyIfNeeded(sshPubKey);
+              setupSSHConfig();
+            }
+        }, 1000);
     }
 
 }
@@ -148,21 +144,27 @@ function savePublicKeyIfNeeded(pubKey){
 }
 
 function setupSSHConfig() {
-    let sshConfigPath = require('os').homedir() + '/.ssh/config';
+    let sshConfigPath = `${require('os').homedir()}/.ssh/config`;
     if (fs.existsSync(sshConfigPath) == false) {
-        exec(`echo "" >> ${sshConfigPath}`, function(err, stdout, stderr) {
-            addSSHConfigRecord();
-        });
+        spawn('touch', [`${sshConfigPath}`]);
+        const timeout = setInterval(function() {
+            const fileExists = fs.existsSync(sshConfigPath);
+            if (fileExists) {
+              clearInterval(timeout);
+              addSSHConfigRecord();
+            }
+        }, 1000);
     } else {
         addSSHConfigRecord();
     }
 }
 
 function addSSHConfigRecord() {
-    let sshConfigPath = require('os').homedir() + '/.ssh/config';
-    var command = `cat ${sshConfigPath}`;
-    exec(command, function(err, stdout, stderr) {
-        const config = SSHConfig.parse(stdout);
+    let sshConfigPath = `${require('os').homedir()}/.ssh/config`;
+    const fileExists = fs.existsSync(sshConfigPath);
+    if (fileExists) {
+        const configContents = fs.readFileSync(sshConfigPath, 'utf8');
+        const config = SSHConfig.parse(configContents);
         const Server = Parse.Object.extend("Server");
         const query = new Parse.Query(Server);
         query.find({
@@ -197,15 +199,16 @@ function addSSHConfigRecord() {
                                 }
                             }
                         }
-                        var changeSSHConfigCmd = `rm ${sshConfigPath} && printf \'${SSHConfig.stringify(config)}\' >> ${sshConfigPath} && chmod 600 ${sshConfigPath}`;
-                        exec(changeSSHConfigCmd, function(err, stdout, stderr) {
-
-                        })
+                        fs.writeFile(sshConfigPath, SSHConfig.stringify(config), function(err) {
+                            if(err) {
+                                console.log(err);
+                            }
+                        });
                     }
                 });
             }
         });
-    });
+    }
 }
 
 function start() {

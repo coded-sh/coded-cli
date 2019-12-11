@@ -1,6 +1,6 @@
 {
     "name": "coded",
-    "version": "1.0.50",
+    "version": "1.0.51",
     "description": "coded.sh is an open-source platform to get web projects online on VPS, cloud and dedicated servers. All your projects can be managed from an interactive CLI (command-line interface).",
     "main": "index.js",
     "scripts": {
