@@ -20,7 +20,7 @@
         "figlet": "^1.2.0",
         "inquirer": "^6.0.0",
         "network": "^0.4.1",
-        "parse": "^1.11.1",
+        "parse": "^2.15.0",
         "request": "^2.88.0",
         "ssh-config": "^2.0.0",
         "ssh-keygen": "^0.4.2"
